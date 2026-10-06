@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kronos Quant Portfolio & Forecaster</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body class="dark-theme">
+    <div class="glass-bg-blur"></div>
+
+    <div class="app-container">
+        <!-- HEADER -->
+        <header class="app-header glass-panel">
+            <div class="brand">
+                <div class="logo-icon" style="background: linear-gradient(135deg, #c5a059, #8c6b2d); color: #ffffff; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;"><i class="fa-solid fa-magnifying-glass"></i></div>
+                <div class="brand-text">
+                    <h1 style="font-family: var(--font-heading); font-size: 1.5rem; font-weight: 800; letter-spacing: 1px; color: #ffffff; margin: 0; line-height: 1.1;">STOCK<span style="color: #c5a059;">HOLMES</span></h1>
+                    <span class="sub-title" style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Modern Market Deduction & Quant Forecaster</span>
+                </div>
+            </div>
+            <div class="header-controls">
+                <div class="model-status-badge glass-panel" id="model-status-btn">
+                    <span class="status-indicator-dot negative" id="status-dot"></span>
+                    <span class="status-text" id="status-text">Model: Unloaded</span>
+                    <i class="fa-solid fa-gear status-gear"></i>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN LAYOUT -->
+        <main class="app-main-grid">
+
+            <!-- LEFT PANEL: PORTFOLIO & MANAGEMENT -->
+            <section class="left-panel flex-column">
+
+                <!-- PORTFOLIO SUMMARY CARD -->
+                <div class="glass-panel card portfolio-summary-card">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-wallet"></i> My Portfolio</h2>
+                        <span class="currency-badge">INR</span>
+                    </div>
+                    <div class="portfolio-metrics">
+                        <div class="metric-row">
+                            <div class="metric">
+                                <span class="metric-label">Total Value</span>
+                                <span class="metric-value" id="port-total-value">₹0.00</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">Total Cost</span>
+                                <span class="metric-value" id="port-total-cost">₹0.00</span>
+                            </div>
+                        </div>
+                        <div class="metric-row border-top">
+                            <div class="metric">
+                                <span class="metric-label">Total Returns (P&L)</span>
+                                <span class="metric-value" id="port-total-pnl">₹0.00 (0.00%)</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">Today's P&L</span>
+                                <span class="metric-value" id="port-today-pnl">₹0.00 (0.00%)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ADD TRANSACTION / SEARCH ASSET CARD -->
+                <div class="glass-panel card add-holding-card">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-plus-circle"></i> Add Stock</h2>
+                    </div>
+                    <form id="add-holding-form" class="flex-column gap-3">
+                        <div class="input-group">
+                            <label for="stock-search-input">Search NSE/BSE Stock</label>
+                            <div class="search-input-wrapper">
+                                <i class="fa-solid fa-search search-icon"></i>
+                                <input type="text" id="stock-search-input" autocomplete="off"
+                                    placeholder="e.g. RELIANCE, TCS, INFY..." required>
+                                <div id="search-suggestions" class="suggestions-dropdown glass-panel hidden"></div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="input-group flex-1">
+                                <label for="holding-shares">Shares</label>
+                                <input type="number" id="holding-shares" min="0.01" step="any" placeholder="0" required>
+                            </div>
+                            <div class="input-group flex-1">
+                                <label for="holding-price">Buy Price (₹)</label>
+                                <input type="number" id="holding-price" min="0.01" step="any" placeholder="0.00"
+                                    required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn primary-btn" id="add-holding-btn">
+                            <i class="fa-solid fa-folder-plus"></i> Add Transaction
+                        </button>
+                    </form>
+                </div>
+
+                <!-- PORTFOLIO LIST CARD -->
+                <div class="glass-panel card holdings-card flex-1">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-list-check"></i> Holdings</h2>
+                        <span class="badge" id="holdings-count">0 Stocks</span>
+                    </div>
+                    <div class="holdings-list-wrapper">
+                        <div class="holdings-list" id="holdings-list-container">
+                            <div class="empty-state">
+                                <i class="fa-solid fa-folder-open empty-icon"></i>
+                                <p>No holdings added yet.</p>
+                                <p class="sub">Search and add transaction above to begin tracking.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- RIGHT PANEL: SEARCH, CHARTING, AND FORECASTS -->
+            <section class="right-panel flex-column">
+
+                <!-- TOP BAR SEARCH & QUICK STATS -->
+                <div class="top-search-row">
+                    <div class="search-input-wrapper glass-panel flex-1">
+                        <i class="fa-solid fa-search search-icon"></i>
+                        <input type="text" id="global-search-input" autocomplete="off"
+                            placeholder="Search and analyze any Indian stock (e.g. TATASTEEL)...">
+                        <button id="global-search-btn" class="search-action-btn" type="button"><i
+                                class="fa-solid fa-arrow-right"></i></button>
+                        <div id="global-suggestions" class="suggestions-dropdown glass-panel hidden"></div>
+                    </div>
+                </div>
+
+                <!-- STOCK HEADER & METRICS -->
+                <div class="glass-panel card stock-details-card hidden" id="stock-details-section">
+                    <div class="stock-summary-header">
+                        <div class="stock-identity">
+                            <h2 id="stock-detail-name">Reliance Industries Limited</h2>
+                            <div class="badge-row">
+                                <span class="ticker-badge" id="stock-detail-symbol">RELIANCE.NS</span>
+                                <span class="exchange-badge" id="stock-detail-exchange">NSE</span>
+                            </div>
+                        </div>
+                        <div class="stock-live-price">
+                            <span class="live-price-val" id="stock-detail-price">₹2,450.00</span>
+                            <span class="live-price-change positive" id="stock-detail-change">+₹45.00 (+1.87%)</span>
+                        </div>
+                    </div>
+
+                    <div class="stock-metrics-grid">
+                        <div class="grid-metric">
+                            <span class="lbl">Open</span>
+                            <span class="val" id="metric-open">₹2,410.00</span>
+                        </div>
+                        <div class="grid-metric">
+                            <span class="lbl">Day's Range</span>
+                            <span class="val" id="metric-range">₹2,405.00 - ₹2,460.00</span>
+                        </div>
+                        <div class="grid-metric">
+                            <span class="lbl">52W Range</span>
+                            <span class="val" id="metric-52w">₹2,100.00 - ₹2,750.00</span>
+                        </div>
+                        <div class="grid-metric">
+                            <span class="lbl">Market Cap</span>
+                            <span class="val" id="metric-mcap">₹16.5T</span>
+                        </div>
+                        <div class="grid-metric">
+                            <span class="lbl">P/E Ratio</span>
+                            <span class="val" id="metric-pe">26.4</span>
+                        </div>
+                        <div class="grid-metric">
+                            <span class="lbl">Volume</span>
+                            <span class="val" id="metric-volume">5.4M</span>
+                        </div>
+                        <div class="grid-metric">
+                            <span class="lbl">Dividend Yield</span>
+                            <span class="val" id="metric-div">0.65%</span>
+                        </div>
+                        <div class="grid-metric">
+                            <span class="lbl">Sector</span>
+                            <span class="val" id="metric-sector">Energy</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MAIN CHART CARD -->
+                <div class="glass-panel card chart-card flex-1 flex-column relative">
+                    <div class="chart-header">
+                        <div class="chart-title">
+                            <h2><i class="fa-solid fa-chart-line"></i> Price Trend Analysis</h2>
+                            <span class="chart-subtitle" id="chart-sub-label">Select a stock to run predictions</span>
+                        </div>
+
+                        <div class="chart-action-bar hidden" id="chart-action-section">
+                            <!-- Chart Type Dropdown -->
+                            <div class="dropdown-wrapper">
+                                <select id="chart-type-select" class="chart-control-select">
+                                    <option value="candlestick" selected>Candlestick</option>
+                                    <option value="line">Line Chart</option>
+                                    <option value="bar">Bar Chart</option>
+                                </select>
+                            </div>
+
+                            <!-- Timeframe/Period Dropdown -->
+                            <div class="dropdown-wrapper">
+                                <select id="chart-period-select" class="chart-control-select" title="Timeframe">
+                                    <option value="1d">1 Day</option>
+                                    <option value="1w">1 Week</option>
+                                    <option value="1m" selected>1 Month</option>
+                                    <option value="1y">1 Year</option>
+                                    <option value="3y">3 Years</option>
+                                    <option value="5y">5 Years+</option>
+                                </select>
+                            </div>
+
+                            <div class="hyperparameter-popover-trigger" id="hyperparams-trigger-btn">
+                                <i class="fa-solid fa-sliders"></i> Params
+                            </div>
+                            
+                            <!-- Enhanced Slide Switch Toggle -->
+                            <div class="enhanced-toggle-container">
+                                <span class="toggle-lbl">Enhanced (News)</span>
+                                <label class="slide-switch">
+                                    <input type="checkbox" id="enhanced-prediction-toggle">
+                                    <span class="slide-slider"></span>
+                                </label>
+                            </div>
+                            
+                            <button class="btn accent-btn" id="run-prediction-btn">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> Predict Trend
+                            </button>
+                            <button class="btn primary-btn" id="sync-sheet-btn" style="background: linear-gradient(135deg, #15803d, #0f5126); box-shadow: 0 4px 15px rgba(21, 128, 61, 0.25);">
+                                <i class="fa-solid fa-file-excel"></i> Sync Sheet
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- HYPERPARAMETERS FLOATING CARD -->
+                    <div class="hyperparameters-card glass-panel hidden" id="hyperparameters-panel">
+                        <div class="popover-header">
+                            <h3>Inference Settings</h3>
+                            <button type="button" class="close-popover-btn" id="close-hyperparams-btn"
+                                title="Close Settings">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                        <div class="popover-body flex-column gap-3">
+                            <div class="input-group">
+                                <label for="param-pred-len">Prediction Horizon (Horizon)</label>
+                                <select id="param-pred-len" class="glass-select-sm">
+                                    <option value="30" selected>30 Days (Fast)</option>
+                                    <option value="60">60 Days (Medium)</option>
+                                    <option value="90">90 Days (Deep)</option>
+                                    <option value="120">120 Days (Full)</option>
+                                </select>
+                                <span class="help-text">Shorter horizons are computed exponentially faster on
+                                    CPU.</span>
+                            </div>
+                            <div class="range-group">
+                                <div class="range-label">
+                                    <span>Temperature (T)</span>
+                                    <span id="val-temp">1.0</span>
+                                </div>
+                                <input type="range" id="param-temp" min="0.1" max="2.0" step="0.1" value="1.0">
+                                <span class="help-text">Controls randomness. Lower values are more stable.</span>
+                            </div>
+                            <div class="range-group">
+                                <div class="range-label">
+                                    <span>Nucleus Sampling (Top-p)</span>
+                                    <span id="val-topp">0.9</span>
+                                </div>
+                                <input type="range" id="param-topp" min="0.1" max="1.0" step="0.05" value="0.9">
+                                <span class="help-text">Filters low probability states. Recommended: 0.9.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CHART PLOT AREA -->
+                    <div class="chart-plot-container flex-1 flex-column justify-center align-center" id="chart-wrapper">
+                        <div class="chart-placeholder flex-column align-center text-center gap-3">
+                            <i class="fa-solid fa-chart-line placeholder-icon"></i>
+                            <div>
+                                <h3>No Stock Selected</h3>
+                                <p class="muted">Search for a ticker or click a portfolio holding to generate
+                                    interactive visualizations and ML-driven forecasts.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LOADER OVERLAY -->
+                    <div class="chart-loading-overlay hidden" id="chart-loader">
+                        <div class="spinner-container">
+                            <div class="sparkle-ring">
+                                <div class="inner-orb"></div>
+                            </div>
+                            <p class="loader-text" id="loader-status">Fetching Stock History...</p>
+                            
+                            <!-- Enhanced Progress Bar -->
+                            <div class="enhanced-progress-container hidden" id="enhanced-progress-container">
+                                <div class="enhanced-progress-track">
+                                    <div class="enhanced-progress-fill" id="enhanced-progress-fill" style="width: 0%;"></div>
+                                </div>
+                                <span class="enhanced-progress-text" id="enhanced-progress-pct">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FORECAST ANALYSIS CARD -->
+                <div class="glass-panel card analysis-card hidden" id="analysis-section">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-brain"></i> Model Forecasting Analysis</h2>
+                    </div>
+                    <div class="analysis-content-grid">
+                        <div class="signal-gauge-card glass-panel flex-column align-center justify-center">
+                            <span class="label">Forecast Trend Signal</span>
+                            <span class="signal-value" id="analysis-signal">NEUTRAL</span>
+                        </div>
+                        <div class="metrics-summary-panel">
+                            <div class="summary-stat-row">
+                                <span class="stat-lbl">Target Close</span>
+                                <span class="stat-val" id="analysis-target">₹0.00 (+0.00%)</span>
+                            </div>
+                            <div class="summary-stat-row">
+                                <span class="stat-lbl">Predicted Max Price</span>
+                                <span class="stat-val" id="analysis-max">₹0.00</span>
+                            </div>
+                            <div class="summary-stat-row">
+                                <span class="stat-lbl">Predicted Min Price</span>
+                                <span class="stat-val" id="analysis-min">₹0.00</span>
+                            </div>
+                        </div>
+                        <div class="analysis-explanation-card glass-panel">
+                            <span class="title">Trend Summary</span>
+                            <p id="analysis-summary">The model is ready to predict. Load a stock and run inference.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NEWS SENTIMENT FEED CARD -->
+                <div class="glass-panel card sentiment-news-card hidden" id="sentiment-news-section">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-newspaper"></i> Live News Sentiment Feed</h2>
+                        <div class="sentiment-compound-gauge" id="sentiment-compound-gauge">
+                            Net Score: <span id="net-sentiment-val">0.00</span>
+                        </div>
+                    </div>
+                    <div class="sentiment-metrics-summary">
+                        <span class="sentiment-desc" id="sentiment-desc-text">Sentiment analysis of live Yahoo & Google news headlines.</span>
+                    </div>
+                    <div class="news-list-wrapper">
+                        <div class="news-list" id="news-list-container">
+                            <!-- Articles loaded dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+        </main>
+
+        <!-- LEGAL DISCLAIMER FOOTER -->
+        <footer class="app-footer">
+            <p><strong>Disclaimer:</strong> StockHolmes is an educational quantitative analytics and machine learning research platform. The model forecasts, sentiment indicators, and hybrid overlays are statistical estimations generated using historical patterns and news feeds. They do not constitute financial advice, investment recommendations, or an endorsement to buy or sell securities. Equity trading involves substantial risk of capital loss. The creators of StockHolmes assume no liability for any investment decisions or trading outcomes. Use at your own risk.</p>
+        </footer>
+    </div>
+
+    <!-- MODEL CONFIGURATION MODAL (SETTINGS) -->
+    <div class="modal-overlay hidden" id="settings-modal">
+        <div class="modal-card glass-panel">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-gear"></i> StockHolmes Engine Settings</h2>
+                <i class="fa-solid fa-times close-modal-btn" id="close-settings-modal"></i>
+            </div>
+            <div class="modal-body flex-column gap-4">
+                <div class="modal-input-group">
+                    <label for="select-model">Model Size</label>
+                    <select id="select-model" class="glass-select">
+                        <option value="kronos-mini">StockHolmes-mini (4.1M params) - Rapid CPU inference</option>
+                        <option value="kronos-small" selected>StockHolmes-small (24.7M params) - Recommended</option>
+                        <option value="kronos-base">StockHolmes-base (102.3M params) - Highest accuracy</option>
+                    </select>
+                    <p class="input-desc" id="model-desc">Small model, balanced accuracy and speed.</p>
+                </div>
+                <div class="modal-input-group">
+                    <label for="select-device">Compute Device</label>
+                    <select id="select-device" class="glass-select">
+                        <option value="cpu" selected>CPU (Highly Compatible)</option>
+                        <option value="cuda">CUDA (Nvidia GPU Acceleration)</option>
+                    </select>
+                    <p class="input-desc">Select CUDA if you have a compatible Nvidia graphics card configured with PyTorch.</p>
+                </div>
+                
+                <div class="modal-input-group">
+                    <label for="input-spreadsheet-id">Google Sheet ID</label>
+                    <input type="text" id="input-spreadsheet-id" class="glass-select" placeholder="e.g. 1a2b3c4d5e..." style="width: 100%; border: 1px solid var(--panel-border); border-radius: 8px; padding: 10px; color: #ffffff; background: rgba(255, 255, 255, 0.03); outline: none;">
+                    <p class="input-desc">Provide your Google Sheet ID (from the sheet URL). Ensure you share your sheet with the service account client email.</p>
+                </div>
+
+                <div class="loading-bar-wrapper hidden" id="modal-loading-bar">
+                    <div class="loading-bar-label">
+                        <span>Downloading and loading model weights...</span>
+                        <span id="loading-pct">Connecting...</span>
+                    </div>
+                    <div class="loading-bar-track">
+                        <div class="loading-bar-progress" id="loading-pct-bar"></div>
+                    </div>
+                </div>
+
+                <button class="btn primary-btn mt-2" id="load-model-submit-btn">
+                    <i class="fa-solid fa-download"></i> Load Model Weights
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NOTIFICATION ALERT POPUP -->
+    <div class="toast-notification hidden" id="toast-message">
+        <i class="fa-solid fa-circle-info toast-icon" id="toast-icon"></i>
+        <span class="toast-text" id="toast-text">Notification message here</span>
+    </div>
+
+    <!-- App Frontend Scripts -->
+    <script src="/static/js/app.js"></script>
+</body>
+
+</html>
